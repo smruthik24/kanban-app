@@ -1,57 +1,256 @@
 openapi: 3.0.3
-description: { type: string }
-position: { type: number }
-assignees: { type: array, items: { type: string } }
-dueDate: { type: string, format: date-time }
-responses:
-'201':
-description: Created
-/api/cards/{cardId}/move:
-patch:
-summary: Move card between lists (or reorder in same list)
-parameters:
-- in: path
-name: cardId
-required: true
-schema: { type: string }
-requestBody:
-required: true
-content:
-application/json:
-schema:
-type: object
-required: [listId, position]
-properties:
-listId: { type: string }
-position: { type: number }
-responses:
-'200':
-description: OK
-/api/cards/{cardId}/comments:
-post:
-summary: Add comment to card
-parameters:
-- in: path
-name: cardId
-required: true
-schema: { type: string }
-requestBody:
-required: true
-content:
-application/json:
-schema:
-type: object
-required: [text]
-properties:
-text: { type: string }
-responses:
-'201':
-description: Created
+info:
+  title: Kanban Board API
+  description: >
+    OpenAPI specification for the Trello-like Kanban real-time collaboration app.
+    Includes authentication, boards, lists, cards, comments, and activity logging.
+  version: 1.0.0
+  contact:
+    name: Dev Team
+    email: support@kanbanapp.local
+
+servers:
+  - url: http://localhost:5000/api
+    description: Local development server
+
+tags:
+  - name: Auth
+    description: User signup and login
+  - name: Users
+    description: Manage user profiles
+  - name: Workspaces
+    description: Workspace and board management
+  - name: Boards
+    description: Board-level operations
+  - name: Lists
+    description: Lists within a board
+  - name: Cards
+    description: Task cards inside lists
+  - name: Comments
+    description: Card comments
+  - name: Activity
+    description: Activity log and events
+
+paths:
+  /auth/signup:
+    post:
+      tags: [Auth]
+      summary: Register a new user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, email, password]
+              properties:
+                name:
+                  type: string
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+                  format: password
+      responses:
+        201:
+          description: User created successfully
+        400:
+          description: Invalid input
+
+  /auth/login:
+    post:
+      tags: [Auth]
+      summary: Login user and get JWT
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email:
+                  type: string
+                password:
+                  type: string
+      responses:
+        200:
+          description: Login successful, returns JWT
+        401:
+          description: Invalid credentials
+
+  /users/me:
+    get:
+      tags: [Users]
+      summary: Get current user profile
+      security:
+        - bearerAuth: []
+      responses:
+        200:
+          description: User profile
+        401:
+          description: Unauthorized
+
+  /workspaces:
+    get:
+      tags: [Workspaces]
+      summary: Get all workspaces for logged-in user
+      security:
+        - bearerAuth: []
+      responses:
+        200:
+          description: List of workspaces
+    post:
+      tags: [Workspaces]
+      summary: Create a new workspace
+      security:
+        - bearerAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name:
+                  type: string
+      responses:
+        201:
+          description: Workspace created
+
+  /boards:
+    get:
+      tags: [Boards]
+      summary: Get all boards for user
+      security:
+        - bearerAuth: []
+      responses:
+        200:
+          description: List of boards
+    post:
+      tags: [Boards]
+      summary: Create a new board
+      security:
+        - bearerAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [title, workspaceId]
+              properties:
+                title:
+                  type: string
+                workspaceId:
+                  type: string
+                visibility:
+                  type: string
+                  enum: [private, workspace]
+      responses:
+        201:
+          description: Board created
+
+  /lists:
+    post:
+      tags: [Lists]
+      summary: Create a list in a board
+      security:
+        - bearerAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [title, boardId, position]
+              properties:
+                title:
+                  type: string
+                boardId:
+                  type: string
+                position:
+                  type: number
+      responses:
+        201:
+          description: List created
+
+  /cards:
+    post:
+      tags: [Cards]
+      summary: Create a card inside a list
+      security:
+        - bearerAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [title, listId, position]
+              properties:
+                title:
+                  type: string
+                description:
+                  type: string
+                listId:
+                  type: string
+                position:
+                  type: number
+                labels:
+                  type: array
+                  items:
+                    type: string
+                assignees:
+                  type: array
+                  items:
+                    type: string
+      responses:
+        201:
+          description: Card created
+
+  /cards/{id}/comments:
+    post:
+      tags: [Comments]
+      summary: Add comment to a card
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [text]
+              properties:
+                text:
+                  type: string
+      responses:
+        201:
+          description: Comment added
+
+  /activity:
+    get:
+      tags: [Activity]
+      summary: Get recent board activity
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: boardId
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: List of activity logs
+
 components:
-securitySchemes:
-bearerAuth:
-type: http
-scheme: bearer
-bearerFormat: JWT
-security:
-- bearerAuth: []
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
