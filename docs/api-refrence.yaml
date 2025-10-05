@@ -1,0 +1,57 @@
+openapi: 3.0.3
+description: { type: string }
+position: { type: number }
+assignees: { type: array, items: { type: string } }
+dueDate: { type: string, format: date-time }
+responses:
+'201':
+description: Created
+/api/cards/{cardId}/move:
+patch:
+summary: Move card between lists (or reorder in same list)
+parameters:
+- in: path
+name: cardId
+required: true
+schema: { type: string }
+requestBody:
+required: true
+content:
+application/json:
+schema:
+type: object
+required: [listId, position]
+properties:
+listId: { type: string }
+position: { type: number }
+responses:
+'200':
+description: OK
+/api/cards/{cardId}/comments:
+post:
+summary: Add comment to card
+parameters:
+- in: path
+name: cardId
+required: true
+schema: { type: string }
+requestBody:
+required: true
+content:
+application/json:
+schema:
+type: object
+required: [text]
+properties:
+text: { type: string }
+responses:
+'201':
+description: Created
+components:
+securitySchemes:
+bearerAuth:
+type: http
+scheme: bearer
+bearerFormat: JWT
+security:
+- bearerAuth: []
